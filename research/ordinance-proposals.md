@@ -1,6 +1,6 @@
 # Sidewalk Snow Rules: Faster, Simpler, More Accessible
 
-Somerville Pedestrian & Transit Advisory Committee (PTAC) · Nov 3, 2026
+Somerville Pedestrian & Transit Advisory Committee (PTAC) · Nov 17, 2026
 
 Copy of the PTAC Claude Doc ("Proposal" tab). The live doc is the working version: https://claude.ai/artifact/7vG43e3w32sGB4efaCwyZE (the chart appears here as a table).
 
