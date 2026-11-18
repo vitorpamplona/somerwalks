@@ -5,6 +5,7 @@ whole map metres. Used by analysis/transit-trends/build.py (the housing pipeline
 draws it credits them on the map and in its sources."""
 import json, math, os, re, sys, urllib.parse, urllib.request
 from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 
 OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
             'https://overpass.kumi.systems/api/interpreter']             # servers come and go: tried in turn
@@ -27,10 +28,22 @@ OSM_BASE = ('('
 OSM_BUILDINGS = 'way["building"](BBOX);'
 
 
-def overpass_tiles(path, box, n, body, ua):
+def stale(d, days=7):
+    """Raise if an Overpass answer's data is more than `days` old: a mirror that stopped updating (Nov 2026: one
+    answered with bus stops as they were in 2024, dropping a year of volunteers' edits)."""
+    ts = d.get('osm3s', {}).get('timestamp_osm_base')
+    if not ts:
+        raise ValueError('no data date in the answer')
+    age = datetime.now(timezone.utc) - datetime.fromisoformat(ts.replace('Z', '+00:00'))
+    if age > timedelta(days=days):
+        raise ValueError(f'stale mirror: data as of {ts[:10]}')
+
+
+def overpass_tiles(path, box, n, body, ua, out='geom'):
     """OpenStreetMap features in `box` (lon0, lat0, lon1, lat1), fetched as n × n tiles (big queries time out), cached
     whole at `path` once every tile has come in. Tiles fetched so far wait in `path`.part, so a build after a failed
-    one fetches only the missing tiles. Delete `path` to pick up new OpenStreetMap edits."""
+    one fetches only the missing tiles. `out`: 'geom' (shapes) or 'meta' (nodes with their version). Delete `path`
+    to pick up new OpenStreetMap edits."""
     if os.path.exists(path):
         with open(path) as f:
             return json.load(f)
@@ -48,14 +61,16 @@ def overpass_tiles(path, box, n, body, ua):
                 continue
             x0, x1 = box[0] + (box[2] - box[0]) * i / n, box[0] + (box[2] - box[0]) * (i + 1) / n
             y0, y1 = box[1] + (box[3] - box[1]) * j / n, box[1] + (box[3] - box[1]) * (j + 1) / n
-            q = '[out:json][timeout:300];' + body.replace('BBOX', f'{y0:.4f},{x0:.4f},{y1:.4f},{x1:.4f}') + 'out geom;'
+            q = '[out:json][timeout:300];' + body.replace('BBOX', f'{y0:.4f},{x0:.4f},{y1:.4f},{x1:.4f}') + f'out {out};'
             for attempt in range(8):
                 url = OVERPASS[attempt % len(OVERPASS)]
                 try:
                     req = urllib.request.Request(url, data=urllib.parse.urlencode({'data': q}).encode(), headers={'User-Agent': ua})
                     with urllib.request.urlopen(req, timeout=400) as r:
-                        for e in json.loads(r.read())['elements']:
-                            els[(e['type'], e['id'])] = e
+                        d = json.loads(r.read())
+                    stale(d)
+                    for e in d['elements']:
+                        els[(e['type'], e['id'])] = e
                     done.add(f'{i},{j}')
                     with open(part, 'w') as f:
                         json.dump({'done': sorted(done), 'els': list(els.values())}, f)
@@ -63,7 +78,7 @@ def overpass_tiles(path, box, n, body, ua):
                 except Exception as e:  # noqa: BLE001 - busy servers answer 504 or reset; try the next
                     print(f'  overpass {url[:40]}… tile {i},{j}: {e}', file=sys.stderr)
             else:
-                print(f'  OpenStreetMap: tile {i},{j} of {os.path.basename(path)} failed; the base map will have a hole '
+                print(f'  OpenStreetMap: tile {i},{j} of {os.path.basename(path)} failed; this data has a hole '
                       f'until a build gets it (tiles so far are kept in {os.path.basename(part)})', file=sys.stderr)
     out = list(els.values())
     if len(done) == n * n:

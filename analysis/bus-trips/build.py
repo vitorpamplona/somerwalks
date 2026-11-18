@@ -47,9 +47,7 @@ WATER = ('https://services1.arcgis.com/hGdibHYSPO59RG1h/arcgis/rest/services/'
 # and amenities (benches, trash cans, bike racks, blocked paths) from the 2017 survey. No shelters or real-time signs.
 # what volunteers mapped at each stop: OpenStreetMap bus stops (shelter, bench, bin, lit, tactile paving, departures
 # board), matched by MBTA stop number (ref), and each tag's year from the stop's edit history. ODbL, (c) OpenStreetMap
-# contributors. Overpass servers come and go, so a few are tried in turn.
-OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
-            'https://overpass.kumi.systems/api/interpreter']
+# contributors. Overpass servers come and go: osm_base.OVERPASS lists the ones tried in turn.
 OSM_API = 'https://api.openstreetmap.org/api/0.6/node/{}/history.json'
 OSM_TAGS = ['shelter', 'bench', 'bin', 'lit', 'tactile_paving', 'departures_board']
 PATI = 'https://services1.arcgis.com/ceiitspzDAHrdGO1/arcgis/rest/services/PATI_Bus_Stops/FeatureServer/0/query'
@@ -215,28 +213,13 @@ def amenities(recs):
 
 def osm_stops(box, want):
     """{MBTA stop id: {'id': node id, tag: [value, year the value was set]}} for the stops in `want` (id -> lon, lat)."""
-    path = os.path.join(CACHE, 'bus-trips-osm.json')
-    if not os.path.exists(path):
-        q = (f'[out:json][timeout:120];node["highway"="bus_stop"]'
-             f'({box[1]:.4f},{box[0]:.4f},{box[3]:.4f},{box[2]:.4f});out meta;')
-        for attempt in range(9):                  # busy servers answer 504 or reset: each tried three times, in turn
-            url = OVERPASS[attempt % len(OVERPASS)]
-            try:
-                req = urllib.request.Request(url, data=urllib.parse.urlencode({'data': q}).encode(), headers={'User-Agent': UA})
-                with urllib.request.urlopen(req, timeout=300) as r:
-                    blob = r.read()
-                json.loads(blob)['elements']
-                with open(path, 'wb') as f:
-                    f.write(blob)
-                break
-            except Exception as e:
-                print(f'  overpass {url[:40]}… failed ({e})', file=sys.stderr)
-                time.sleep(10)
-    if not os.path.exists(path):
+    # in 3 x 3 tiles: one query for the whole map times out on every server (Nov 2026)
+    nodes = osm.overpass_tiles(os.path.join(CACHE, 'bus-trips-osm.json'), box, 3, 'node["highway"="bus_stop"](BBOX);', UA, out='meta')
+    if isinstance(nodes, dict):                   # a cache from before Nov 2026: the whole Overpass answer
+        nodes = nodes['elements']
+    if not nodes:
         print('  OpenStreetMap: no server answered; the page shows the MBTA survey only', file=sys.stderr)
         return {}
-    with open(path) as f:
-        nodes = json.load(f)['elements']
     byref = {n['tags']['ref']: n for n in nodes if n.get('tags', {}).get('ref')}
     out = {}
     for sid, (lon, lat) in want.items():

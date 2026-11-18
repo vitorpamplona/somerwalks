@@ -42,7 +42,7 @@ Builders (each writes into `docs/`; run the one for what you changed):
 | `npm run pages` | storm pages only, from `docs/snow/data/` | nothing |
 | `npm run cards` (`-- 23-fines` for one) | card PNGs from `cards/src/` | Playwright |
 | `npm run flyer` | `docs/snow/flyer-phone.png` | `npm run dev` running |
-| `npm run trips` | `docs/bus-trips.html` and `docs/bus-pulse.html` | network: big downloads are cached in `.cache/` after the first run, but every build fetches the MBTA's small feed list; delete `.cache/bus-trips-osm.json` to pick up new OpenStreetMap edits |
+| `npm run trips` | `docs/bus-trips.html` (with its street map, `docs/bus-trips-basemap.json`) and `docs/bus-pulse.html` | network: big downloads are cached in `.cache/` after the first run, but every build fetches the MBTA's small feed list; delete `.cache/bus-trips-osm.json` (stop details) or `.cache/bus-trips-osm-base.json` (the street map; about 1.5 hours to fetch again) to pick up new OpenStreetMap edits |
 | `npm run trends` | `docs/transit-trends.html` | network the first time (the ridership file, stop locations, rail counts, fare-gate entries, Bluebikes trips and the bus arrival-time file, about 1.5 GB in all, are cached in `.cache/`); every build fetches the MBTA's small feed list, and the City's permits, MassBuilds and the project parcels are fetched again each month; OpenStreetMap for the housing map's base map is cached (`.cache/trends-osm-*.json`; delete to refresh) |
 | `npm run planner` | `docs/bus-planner.html` | `docs/snow/data/bus-stops.json` and `wards.json` (no network) |
 | `npm run lights` | the "Somerville's lights" GIF and video in the cards gallery | `npm run dev` running, ffmpeg |
