@@ -32,12 +32,10 @@ a{color:var(--orange)}
 .app{display:grid;grid-template-columns:minmax(0,1fr) 400px;height:calc(100vh - 56px);min-height:480px}
 @media (min-width:1001px){body{height:100vh;overflow:hidden;display:flex;flex-direction:column}.app{flex:1;height:auto;min-height:0}}
 .mapcol{position:relative;background:#0B1C2E;overflow:hidden}
-#map{width:100%;height:100%;display:block;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+#base{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#map{position:relative;width:100%;height:100%;display:block;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 #map.grabbing{cursor:grabbing}
 #map path,#map line{vector-effect:non-scaling-stroke}
-.town{fill:#C8D6E5;stroke:#0B1C2E;stroke-width:1.2px}
-.town.home{fill:var(--snow)}
-.water{fill:#0B1C2E;stroke:none}
 .tlab{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:.12em;fill:#7B93AE;pointer-events:none;text-anchor:middle}
 .tlab.home{fill:var(--mute)}
 .route{fill:none;stroke:#5E7894;stroke-width:1.6px;stroke-opacity:.55;stroke-linejoin:round}
@@ -61,6 +59,8 @@ a{color:var(--orange)}
 .tile:hover{box-shadow:inset 0 0 0 1px rgba(238,243,247,.5)}
 .tile:focus-visible{outline:2px solid var(--orange);outline-offset:1px}
 .tile.on{box-shadow:inset 0 0 0 2px var(--snow)}
+.osm{position:absolute;right:8px;bottom:4px;font-size:11px;color:var(--mute);background:rgba(238,243,247,.8);padding:0 6px;border-radius:4px;z-index:3}
+.osm a{color:var(--mute)}
 .mapctl{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:6px}
 .mapctl button{width:40px;height:40px;border-radius:10px;border:0;background:rgba(16,36,58,.92);color:#fff;font:700 20px var(--body);cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.3)}
 .legend{position:absolute;top:12px;left:12px;max-width:280px;background:rgba(16,36,58,.92);border-radius:12px;padding:8px 12px;font-size:13px;color:var(--snow);box-shadow:0 2px 10px rgba(0,0,0,.3)}
@@ -161,8 +161,9 @@ details.how p{margin:6px 0}
 <header class="bar"><div><a class="brand" href="./">Somer<span>Walks</span></a><span class="apptitle">Where bus riders go <small>PTAC · an estimate, not an MBTA page</small></span><nav><a href="snow/"><span class="long">Snow guide</span><span class="short">Snow</span></a></nav></div></header>
 <div class="app">
   <div class="mapcol">
+    <canvas id="base" aria-hidden="true"></canvas>
     <svg id="map" role="img" aria-label="Map of Somerville's bus routes and the cities and towns they reach. Pick a stop to see where its riders get off.">
-      <g id="gtowns"></g><g id="gwater"></g><g id="glabels"></g><g id="grapid"></g><g id="groutes"></g><g id="gflows"></g><g id="gstops"></g><g id="ghl"></g>
+      <g id="glabels"></g><g id="grapid"></g><g id="groutes"></g><g id="gflows"></g><g id="gstops"></g><g id="ghl"></g>
     </svg>
     <details class="legend" open>
       <summary>Map key</summary>
@@ -179,6 +180,7 @@ details.how p{margin:6px 0}
       <button id="zout" title="Zoom out" aria-label="Zoom out">−</button>
       <button id="zfit" title="Show it all" aria-label="Show it all">⤢</button>
     </div>
+    <div class="osm">© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors</div>
   </div>
   <aside class="side">
     <form class="find" id="find"><input id="q" list="stoplist" placeholder="Find a stop: Davis, Union Sq…" aria-label="Find a stop"><datalist id="stoplist"></datalist><button class="btn">Go</button></form>
@@ -197,7 +199,7 @@ details.how p{margin:6px 0}
       <p>Routes, stops and lines are drawn as they ran in <span class="season"></span>. The ridership file's "Bennett Alley" (a layover before Harvard's upper busway, not a stop in the schedule) is counted at Harvard.</p>
     </details>
     <div class="about">
-      Sources: <a href="https://mbta-massdot.opendata.arcgis.com/datasets/8daf4a33925a4df59183f860826d29ee">MBTA bus ridership by trip, season, route and stop</a> (<span class="season"></span>, average per trip); <a href="https://www.mbta.com/developers/gtfs">MBTA schedule (GTFS)</a> from the <a href="https://cdn.mbta.com/archive/archived_feeds.txt">MBTA's feed archive</a>, <span id="feed"></span>; town outlines: <a href="https://www.mass.gov/info-details/massgis-data-municipalities">MassGIS</a>; rivers and ponds: <a href="https://www.arcgis.com/home/item.html?id=22e491ae01cc4907934d8a81f2e0b40b">MassDEP hydrography</a>; what's at each stop: <a href="https://www.arcgis.com/home/item.html?id=24a97982b39f4febb504c9e6cb55879b">MBTA PATI</a> (ADA status 2024, survey 2017) and © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (ODbL). Made by the Somerville Pedestrian &amp; Transit Advisory Committee (PTAC). Not an MBTA or City page. <a href="https://github.com/vitorpamplona/somerwalks/tree/main/analysis/bus-trips">Method and code</a>.
+      Sources: <a href="https://mbta-massdot.opendata.arcgis.com/datasets/8daf4a33925a4df59183f860826d29ee">MBTA bus ridership by trip, season, route and stop</a> (<span class="season"></span>, average per trip); <a href="https://www.mbta.com/developers/gtfs">MBTA schedule (GTFS)</a> from the <a href="https://cdn.mbta.com/archive/archived_feeds.txt">MBTA's feed archive</a>, <span id="feed"></span>; town outlines: <a href="https://www.mass.gov/info-details/massgis-data-municipalities">MassGIS</a>; rivers and ponds: <a href="https://www.arcgis.com/home/item.html?id=22e491ae01cc4907934d8a81f2e0b40b">MassDEP hydrography</a>; what's at each stop: <a href="https://www.arcgis.com/home/item.html?id=24a97982b39f4febb504c9e6cb55879b">MBTA PATI</a> (ADA status 2024, survey 2017) and OpenStreetMap; streets, paths, parks and rail on the map: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (ODbL). Made by the Somerville Pedestrian &amp; Transit Advisory Committee (PTAC). Not an MBTA or City page. <a href="https://github.com/vitorpamplona/somerwalks/tree/main/analysis/bus-trips">Method and code</a>.
     </div>
     </div>
   </aside>
@@ -262,6 +264,7 @@ const zoom = () => FITW / VB[2];
 const pathD = (pts) => 'M' + pts.map((p) => p[0] + ' ' + p[1]).join('L');
 function setView(vb, full) {
   VB = vb; map.setAttribute('viewBox', vb.map((v) => v.toFixed(1)).join(' '));
+  paintBase();
   if (full) { drawLabels(); drawStops(); drawFlows(); }
   drawHL();
 }
@@ -288,9 +291,57 @@ function zoomAt(f, cx, cy) {
 }
 const px = () => VB[2] / map.getBoundingClientRect().width;   // map units per screen pixel
 
-// towns (drawn once), with Somerville lighter
-$('#gtowns').innerHTML = D.towns.map((t) => `<path class="town${t.n === 'Somerville' ? ' home' : ''}" d="${t.rings.map((r) => pathD(r) + 'Z').join('')}"/>`).join('');
-$('#gwater').innerHTML = `<path class="water" d="${D.water.map((r) => pathD(r) + 'Z').join('')}"/>`;
+// ---------- the base map, painted on a canvas under the SVG in map metres: towns (Somerville lighter), rivers and
+// ponds, and OpenStreetMap's streets, paths, rail, parks and street names from a file beside the page (build.py,
+// basemap()), fetched after the map draws. Opened from disk, the fetch fails and the map works without streets.
+const baseCv = $('#base'), BM = { d: null, towns: null, water: null, loading: false };
+const ringPath = (rings) => { const p = new Path2D(); rings.forEach((r) => { p.moveTo(r[0][0], r[0][1]); for (let i = 1; i < r.length; i++) p.lineTo(r[i][0], r[i][1]); p.closePath(); }); return p; };
+const unpack = (a, close, p) => { let x = a[0], y = a[1]; p.moveTo(x, y); for (let i = 2; i < a.length; i += 2) { x += a[i]; y += a[i + 1]; p.lineTo(x, y); } if (close) p.closePath(); };
+const joined = (list, close) => { const p = new Path2D(); list.forEach((a) => unpack(a, close, p)); return p; };
+function loadBase() {
+  if (BM.loading || !D.base) return; BM.loading = true;
+  fetch(D.base).then((r) => r.ok ? r.json() : null).then((d) => {
+    if (!d) return;
+    BM.d = { M: joined(d.roads.M), m: joined(d.roads.m), p: joined(d.roads.p), rail: joined(d.rail), green: joined(d.green, true), water: joined(d.water, true), names: d.names };
+    paintBase();
+  }).catch(() => {});
+}
+function paintBase() {
+  const r = map.getBoundingClientRect(), m = map.getScreenCTM(), dpr = Math.min(2, devicePixelRatio || 1);
+  const W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+  if (!m || !W || !H) return;
+  if (baseCv.width !== W || baseCv.height !== H) { baseCv.width = W; baseCv.height = H; }
+  const s = m.a, ox = m.e - r.left, oy = m.f - r.top, mpp = 1 / s, px = (v) => v / s;   // a width in screen pixels, in map metres
+  const ctx = baseCv.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H);
+  ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * ox, dpr * oy);
+  if (!BM.towns) { BM.towns = D.towns.map((t) => [t.n === 'Somerville', ringPath(t.rings)]); BM.water = ringPath(D.water); }
+  BM.towns.forEach(([home, p]) => { ctx.fillStyle = home ? '#EEF3F7' : '#C8D6E5'; ctx.fill(p); });
+  const B = BM.d, lz = Math.max(0, Math.log2(8 / mpp));                // 0 when a pixel is 8 m or more, then up as you zoom in
+  if (B) { ctx.fillStyle = 'rgba(96,160,112,.22)'; ctx.fill(B.green); ctx.fillStyle = '#0B1C2E'; ctx.fill(B.water); }
+  ctx.fillStyle = '#0B1C2E'; ctx.fill(BM.water);
+  ctx.strokeStyle = '#0B1C2E'; ctx.lineWidth = px(1.2); ctx.lineJoin = 'round';
+  BM.towns.forEach(([, p]) => ctx.stroke(p));
+  if (!B) return;
+  ctx.lineCap = 'round';
+  if (mpp < 5) { ctx.strokeStyle = 'rgba(71,96,124,.3)'; ctx.lineWidth = px(0.8); ctx.setLineDash([px(3), px(3)]); ctx.stroke(B.p); }
+  ctx.setLineDash([px(4), px(3)]); ctx.strokeStyle = 'rgba(71,96,124,.45)'; ctx.lineWidth = px(1.2); ctx.stroke(B.rail); ctx.setLineDash([]);
+  ctx.strokeStyle = 'rgba(71,96,124,.2)'; ctx.lineWidth = px(0.6 + 0.4 * lz); ctx.stroke(B.m);
+  ctx.strokeStyle = 'rgba(71,96,124,.32)'; ctx.lineWidth = px(1.1 + 0.6 * lz); ctx.stroke(B.M);
+  if (mpp > 2.6) return;                                              // street names once zoomed in, where they fit
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.font = "600 11.5px Barlow, 'Barlow Fallback', Arial, sans-serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(238,243,247,.85)'; ctx.fillStyle = 'rgba(54,76,100,.9)';
+  const boxes = [], w = r.width, h = r.height;
+  for (const [n, mx, my, ang] of B.names) {
+    const x = mx * s + ox, y = my * s + oy; if (x < 20 || x > w - 20 || y < 12 || y > h - 12) continue;
+    const tw = ctx.measureText(n).width, a = ang * Math.PI / 180, cw = Math.abs(Math.cos(a)) * tw / 2 + 7, ch = Math.abs(Math.sin(a)) * tw / 2 + 7;
+    const b = [x - cw, y - ch, x + cw, y + ch];
+    if (boxes.some((q) => b[0] < q[2] && b[2] > q[0] && b[1] < q[3] && b[3] > q[1])) continue;
+    boxes.push(b); ctx.save(); ctx.translate(x, y); ctx.rotate(a); ctx.strokeText(n, 0, 0); ctx.fillText(n, 0, 0); ctx.restore();
+  }
+}
+if (window.ResizeObserver) new ResizeObserver(() => paintBase()).observe(map);   // the map shrinks on phones once a stop is picked
 const TOWNLAB = D.towns.map((t) => {
   const r = t.rings.reduce((a, b) => (b.length > a.length ? b : a));
   let x = 0, y = 0; r.forEach((p) => { x += p[0]; y += p[1]; });
@@ -725,6 +776,7 @@ drawFeatBar();
 document.body.classList.toggle('picked', pick !== null);
 fitView(false); update();
 if (pick !== null) glideTo(pick);
+setTimeout(loadBase, 0);
 </script>
 </body>
 </html>

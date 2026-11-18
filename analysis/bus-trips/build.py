@@ -31,6 +31,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, '..', '..'))
 CACHE, OUT = os.path.join(ROOT, '.cache'), os.path.join(HERE, 'output')
 UA = 'somersnow-bus-trips (PTAC; github.com/vitorpamplona/somerwalks)'
+BASEMAP = 'bus-trips-basemap.json'                 # OpenStreetMap streets under the map, beside the page
+sys.path.insert(0, os.path.dirname(HERE))
+import osm_base as osm  # noqa: E402 - the shared OpenStreetMap base map (analysis/osm_base.py)
 
 RIDERSHIP = 'https://www.arcgis.com/sharing/rest/content/items/8daf4a33925a4df59183f860826d29ee/data'
 FEEDS = 'https://cdn.mbta.com/archive/archived_feeds.txt'
@@ -597,6 +600,11 @@ def main():
             if len(r) > 3:
                 water.append([xy(*q) for q in r])
 
+    # streets, rail, parks and water from OpenStreetMap, painted under the routes; paths only in and near Somerville
+    som = [q for ft in tj['features'] if ft['attributes']['TOWN'].title() == 'Somerville' for r in ft['geometry']['rings'] for q in r]
+    near = (min(q[0] for q in som) - 0.003, min(q[1] for q in som) - 0.0018, max(q[0] for q in som) + 0.003, max(q[1] for q in som) + 0.0018)
+    base = basemap(box, near, xy)
+
     pati_at = pati(box)
     osm_at = osm_stops(box, {s: (float(meta[s]['stop_lon']), float(meta[s]['stop_lat'])) for s in meta})
 
@@ -662,7 +670,7 @@ def main():
             if sid in ix and (rid, dirn) in rdi and sum(v) >= 0.05:
                 by_stop[str(ix[sid])][str(rdi[(rid, dirn)])] = [round(x * 10) for x in v]
         hourly_rd[day] = {k: v for k, v in by_stop.items() if len(v) > 1}
-    payload = {'season': season, 'feed': feed, 'days': DAYS, 'hours': hourly, 'hoursRd': hourly_rd, 'routes': rshapes, 'rd': rd, 'rapid': rapid, 'towns': towns, 'water': water,
+    payload = {'season': season, 'feed': feed, 'days': DAYS, 'hours': hourly, 'hoursRd': hourly_rd, 'routes': rshapes, 'rd': rd, 'rapid': rapid, 'towns': towns, 'water': water, 'base': base,
                'stops': stops, 'flows': flows, 'totals': totals}
     blob = json.dumps(payload, separators=(',', ':'))
     with open(os.path.join(HERE, 'trips_template.html')) as f:
@@ -675,6 +683,20 @@ def main():
     pairs = sum(len(v) for d in flows.values() for v in d.values())
     print(f'{season}: {len(stops)} stops, {len(rshapes)} routes, {len(towns)} towns, {pairs} stop pairs; '
           f'riders a day: ' + ', '.join(f'{DAYS[d]} {totals[d]:,}' for d in DAYS) + f'; page {len(page) // 1024} KB')
+
+
+
+def basemap(box, near, xy):
+    """The faint street map under "Where bus riders go": OpenStreetMap streets (major, minor; paths only in and near
+    Somerville), commuter rail, parks and green land, water and street names, across the whole map, in map metres. No
+    buildings. Written beside the page (docs/bus-trips-basemap.json), which fetches it after it draws, so the page stays
+    light; output/trips.html opened alone has no street map. © OpenStreetMap contributors, ODbL."""
+    els = osm.overpass_tiles(os.path.join(CACHE, 'bus-trips-osm-base.json'), box, 4, osm.OSM_BASE, UA)
+    b = osm.layers(els, xy, near, names_everywhere=True)
+    n = osm.write(os.path.join(ROOT, 'docs', BASEMAP), b)
+    print(f"  street map (OpenStreetMap): roads {sum(len(v) for v in b['roads'].values())}, rail {len(b['rail'])}, "
+          f"green {len(b['green'])}, water {len(b['water'])}, names {len(b['names'])}; {n // 1024} KB", file=sys.stderr)
+    return BASEMAP
 
 
 def pulse(day_trips, offset, sched, ix, rdi, stops, rshapes, rapid, towns, water, season, feed, rail):
