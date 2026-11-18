@@ -29,13 +29,23 @@ OSM_BUILDINGS = 'way["building"](BBOX);'
 
 def overpass_tiles(path, box, n, body, ua):
     """OpenStreetMap features in `box` (lon0, lat0, lon1, lat1), fetched as n × n tiles (big queries time out), cached
-    whole at `path`. Delete it to pick up new OpenStreetMap edits."""
+    whole at `path` once every tile has come in. Tiles fetched so far wait in `path`.part, so a build after a failed
+    one fetches only the missing tiles. Delete `path` to pick up new OpenStreetMap edits."""
     if os.path.exists(path):
         with open(path) as f:
             return json.load(f)
-    els = {}
+    part = path + '.part'
+    done, els = set(), {}
+    if os.path.exists(part):
+        with open(part) as f:
+            p = json.load(f)
+        done = set(p['done'])
+        els = {(e['type'], e['id']): e for e in p['els']}
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     for i in range(n):
         for j in range(n):
+            if f'{i},{j}' in done:
+                continue
             x0, x1 = box[0] + (box[2] - box[0]) * i / n, box[0] + (box[2] - box[0]) * (i + 1) / n
             y0, y1 = box[1] + (box[3] - box[1]) * j / n, box[1] + (box[3] - box[1]) * (j + 1) / n
             q = '[out:json][timeout:300];' + body.replace('BBOX', f'{y0:.4f},{x0:.4f},{y1:.4f},{x1:.4f}') + 'out geom;'
@@ -46,15 +56,21 @@ def overpass_tiles(path, box, n, body, ua):
                     with urllib.request.urlopen(req, timeout=400) as r:
                         for e in json.loads(r.read())['elements']:
                             els[(e['type'], e['id'])] = e
+                    done.add(f'{i},{j}')
+                    with open(part, 'w') as f:
+                        json.dump({'done': sorted(done), 'els': list(els.values())}, f)
                     break
                 except Exception as e:  # noqa: BLE001 - busy servers answer 504 or reset; try the next
                     print(f'  overpass {url[:40]}… tile {i},{j}: {e}', file=sys.stderr)
             else:
-                print(f'  OpenStreetMap: tile {i},{j} of {os.path.basename(path)} failed; the base map will have a hole', file=sys.stderr)
+                print(f'  OpenStreetMap: tile {i},{j} of {os.path.basename(path)} failed; the base map will have a hole '
+                      f'until a build gets it (tiles so far are kept in {os.path.basename(part)})', file=sys.stderr)
     out = list(els.values())
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, 'w') as f:
-        json.dump(out, f)
+    if len(done) == n * n:
+        with open(path, 'w') as f:
+            json.dump(out, f)
+        if os.path.exists(part):
+            os.remove(part)
     return out
 
 
