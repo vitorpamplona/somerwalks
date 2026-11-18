@@ -219,15 +219,19 @@ def osm_stops(box, want):
     if not os.path.exists(path):
         q = (f'[out:json][timeout:120];node["highway"="bus_stop"]'
              f'({box[1]:.4f},{box[0]:.4f},{box[3]:.4f},{box[2]:.4f});out meta;')
-        for url in OVERPASS:
+        for attempt in range(9):                  # busy servers answer 504 or reset: each tried three times, in turn
+            url = OVERPASS[attempt % len(OVERPASS)]
             try:
-                blob = get(url + '?' + urllib.parse.urlencode({'data': q}), tries=2)
-                json.loads(blob)
+                req = urllib.request.Request(url, data=urllib.parse.urlencode({'data': q}).encode(), headers={'User-Agent': UA})
+                with urllib.request.urlopen(req, timeout=300) as r:
+                    blob = r.read()
+                json.loads(blob)['elements']
                 with open(path, 'wb') as f:
                     f.write(blob)
                 break
             except Exception as e:
                 print(f'  overpass {url[:40]}… failed ({e})', file=sys.stderr)
+                time.sleep(10)
     if not os.path.exists(path):
         print('  OpenStreetMap: no server answered; the page shows the MBTA survey only', file=sys.stderr)
         return {}
