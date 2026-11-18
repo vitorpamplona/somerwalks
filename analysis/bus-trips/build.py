@@ -213,8 +213,8 @@ def amenities(recs):
 
 def osm_stops(box, want):
     """{MBTA stop id: {'id': node id, tag: [value, year the value was set]}} for the stops in `want` (id -> lon, lat)."""
-    # in 3 x 3 tiles: one query for the whole map times out on every server (Nov 2026)
-    nodes = osm.overpass_tiles(os.path.join(CACHE, 'bus-trips-osm.json'), box, 3, 'node["highway"="bus_stop"](BBOX);', UA, out='meta')
+    # in 4 x 4 tiles: one query for the whole map, or a third of it across downtown Boston, timed out (Nov 2026)
+    nodes = osm.overpass_tiles(os.path.join(CACHE, 'bus-trips-osm.json'), box, 4, 'node["highway"="bus_stop"](BBOX);', UA, out='meta')
     if isinstance(nodes, dict):                   # a cache from before Nov 2026: the whole Overpass answer
         nodes = nodes['elements']
     if not nodes:

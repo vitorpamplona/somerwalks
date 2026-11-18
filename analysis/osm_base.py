@@ -49,11 +49,13 @@ def overpass_tiles(path, box, n, body, ua, out='geom'):
             return json.load(f)
     part = path + '.part'
     done, els = set(), {}
+    grid = [n, [round(v, 6) for v in box]]            # tiles so far count only for the same grid
     if os.path.exists(part):
         with open(part) as f:
             p = json.load(f)
-        done = set(p['done'])
-        els = {(e['type'], e['id']): e for e in p['els']}
+        if p.get('grid') == grid:
+            done = set(p['done'])
+            els = {(e['type'], e['id']): e for e in p['els']}
     os.makedirs(os.path.dirname(path), exist_ok=True)
     for i in range(n):
         for j in range(n):
@@ -73,7 +75,7 @@ def overpass_tiles(path, box, n, body, ua, out='geom'):
                         els[(e['type'], e['id'])] = e
                     done.add(f'{i},{j}')
                     with open(part, 'w') as f:
-                        json.dump({'done': sorted(done), 'els': list(els.values())}, f)
+                        json.dump({'grid': grid, 'done': sorted(done), 'els': list(els.values())}, f)
                     break
                 except Exception as e:  # noqa: BLE001 - busy servers answer 504 or reset; try the next
                     print(f'  overpass {url[:40]}… tile {i},{j}: {e}', file=sys.stderr)
