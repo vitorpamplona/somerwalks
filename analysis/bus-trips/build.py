@@ -220,10 +220,13 @@ def osm_stops(box, want):
     if not nodes:
         print('  OpenStreetMap: no server answered; the page shows the MBTA survey only', file=sys.stderr)
         return {}
-    byref = {n['tags']['ref']: n for n in nodes if n.get('tags', {}).get('ref')}
+    byref = defaultdict(list)                      # some MBTA numbers are on two nodes (2304: Linnaean St and Shepherd St)
+    for n in nodes:
+        if n.get('tags', {}).get('ref'):
+            byref[n['tags']['ref']].append(n)
     out = {}
     for sid, (lon, lat) in want.items():
-        n = byref.get(sid)
+        n = min(byref.get(sid, []), key=lambda n: math.hypot((n['lon'] - lon) * 82000, (n['lat'] - lat) * 111000), default=None)
         if not n:                                 # no MBTA number on the node: the nearest stop within 30 m
             near = min(nodes, key=lambda n: math.hypot((n['lon'] - lon) * 82000, (n['lat'] - lat) * 111000), default=None)
             if near and math.hypot((near['lon'] - lon) * 82000, (near['lat'] - lat) * 111000) < 30 and not near['tags'].get('ref'):
