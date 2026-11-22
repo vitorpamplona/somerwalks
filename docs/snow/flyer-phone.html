@@ -88,12 +88,12 @@ h2{font-size:26px;margin-bottom:6px}
 <div class="tools"><a class="btn" href="flyer-phone.png" download="somerville-snow-flyer.png">Save the image</a><button id="share" hidden>Share</button><a href="flyer.html">Print version</a><a href="./">Back to the guide</a></div>
 <main class="page">
   <div class="top">
-    <h1>Shovel the sidewalk.<br><em>Open the ramp.</em></h1>
+    <h1>Shovel the sidewalk.<br><em>Clear a path to crosswalks.</em></h1>
     <div class="rules">
-      <div class="rule"><b>6</b><span>Hours to shovel</span><small>Counting daylight only, from when the snow stops.</small></div>
+      <div class="rule"><b>6</b><span>Hours to shovel</span><small>Daylight hours from when the snow stops.</small></div>
       <div class="rule"><b>3 FT</b><span>Wide path</span><small>Room for a wheelchair or a stroller.</small></div>
       <div class="rule"><b>0″</b><span>Scrape it clean</span><small>Halfway is a violation: a thin layer turns to ice.</small></div>
-      <div class="rule"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M3 30 H17 L31 20 H45"/><path d="M3 38 H45"/><path d="M33 26 V34 M38 26 V34 M43 26 V34"/></svg><span>Ramp to crosswalk</span><small>Businesses must. Everyone should.</small></div>
+      <div class="rule"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M3 30 H17 L31 20 H45"/><path d="M3 38 H45"/><path d="M33 26 V34 M38 26 V34 M43 26 V34"/></svg><span>Ramps to crosswalks</span><small>Businesses must clear. Everyone should.</small></div>
     </div>
   </div>
   <div class="body">
@@ -103,16 +103,16 @@ h2{font-size:26px;margin-bottom:6px}
         <h2>By law</h2>
         <ul class="list">
           <li><b>Your sidewalk:</b> the whole front. Corner lot? Both sides.</li>
+          <li><b>Owners, tenants and businesses</b> can all be ticketed, for ice as well as snow.</li>
           <li><b>Landlords:</b> shared exits and stairs too. A lease can't change it.</li>
-          <li><b>Ground-floor businesses:</b> the ramp to the crosswalk.</li>
           <li><b>Roof gutters:</b> no water onto the sidewalk. It freezes.</li>
-          <li><b>Never</b> put snow in the street.</li>
         </ul>
+        <p class="note">A summary, not legal advice. The full rules: <b>somervillema.gov/snow</b></p>
         <h2 class="h2b">If you are a good neighbor</h2>
         <ul class="list">
-          <li><b>Hydrants:</b> 3 feet all around. Seconds count.</li>
+          <li><b>Hydrants:</b> 3 feet all around.</li>
           <li><b>Bus stops:</b> a path to the bus door.</li>
-          <li><b>Storm drains:</b> open the grate at your curb.</li>
+          <li><b>Storm drains:</b> clear the grate at your curb.</li>
           <li><b>Curb ramps:</b> clear the one at your corner.</li>
         </ul>
       </div>
@@ -139,7 +139,7 @@ h2{font-size:26px;margin-bottom:6px}
 import { corner } from './js/corner.js';
 document.getElementById('art').innerHTML = corner('flyer-corner', false);
 const sh = document.getElementById('share');
-if (navigator.share) { sh.hidden = false; sh.onclick = () => navigator.share({ title: 'Shovel the sidewalk. Open the ramp.', url: 'https://somerwalks.org/snow/' }).catch(() => {}); }
+if (navigator.share) { sh.hidden = false; sh.onclick = () => navigator.share({ title: 'Shovel the sidewalk. Clear a path to crosswalks.', url: 'https://somerwalks.org/snow/' }).catch(() => {}); }
 if (location.search.includes('shot')) document.body.classList.add('shot'); // for scripts/render-flyer.mjs
 // Crop to the sidewalk band so the page keeps room for fines, 311 and the QR code.
 document.querySelector('#art svg').setAttribute('viewBox', '0 150 800 276');
